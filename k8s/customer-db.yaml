@@ -1,0 +1,54 @@
+# sit722-10-2d/k8s/order-db.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-db-deployment-task10-2d # Deployment name matches
+  labels:
+    app: customer-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: customer-db
+  template:
+    metadata:
+      labels:
+        app: customer-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine # Use the same PostgreSQL image as in Docker Compose
+        ports:
+        - containerPort: 5432 # Default PostgreSQL port
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-task10-2d # ConfigMap name matches
+              key: CUSTOMERS_DB_NAME # Point to the order database name
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-task10-2d # Secret name matches
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-task10-2d # Secret name matches
+              key: POSTGRES_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-db-service-task10-2d # Internal DNS name for the Customer DB
+  labels:
+    app: customer-db
+spec:
+  selector:
+    app: customer-db # Selects pods with the label app: customer-db
+  ports:
+    - protocol: TCP
+      port: 5432 # The port the service listens on (default PostgreSQL)
+      targetPort: 5432 # The port on the Pod (containerPort)
+  type: ClusterIP # Only accessible from within the cluster

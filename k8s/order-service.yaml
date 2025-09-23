@@ -1,0 +1,67 @@
+# sit722-10-2d/k8s/order-service.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service-task10-2d # Deployment name matches
+  labels:
+    app: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+      - name: order-service-container
+        image: chriswen430acr.azurecr.io/order_service:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: POSTGRES_HOST
+          value: order-db-service-task10-2d
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-task10-2d
+              key: ORDERS_DB_NAME
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-task10-2d
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-task10-2d
+              key: POSTGRES_PASSWORD
+        - name: PRODUCT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-task10-2d
+              key: PRODUCT_SERVICE_URL
+        - name: CUSTOMER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-task10-2d
+              key: CUSTOMER_SERVICE_URL              
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service-task10-2d
+  labels:
+    app: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8000
+  type: LoadBalancer

@@ -1,0 +1,78 @@
+# sit722-10-2d/k8s/product-service.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service-task10-2d
+  labels:
+    app: product-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      containers:
+      - name: product-service-container
+        image: chriswen430acr.azurecr.io/product_service:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        # Database connection details
+        - name: POSTGRES_HOST
+          value: product-db-service-task10-2d
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-task10-2d
+              key: PRODUCTS_DB_NAME
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-task10-2d # Secret name matches
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-task10-2d # Secret name matches
+              key: POSTGRES_PASSWORD
+        - name: AZURE_STORAGE_ACCOUNT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-task10-2d # Secret name matches
+              key: AZURE_STORAGE_ACCOUNT_NAME
+        - name: AZURE_STORAGE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ecomm-secrets-task10-2d # Secret name matches
+              key: AZURE_STORAGE_ACCOUNT_KEY
+        - name: AZURE_STORAGE_CONTAINER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-task10-2d # ConfigMap name matches
+              key: AZURE_STORAGE_CONTAINER_NAME
+        - name: AZURE_SAS_TOKEN_EXPIRY_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: ecomm-config-task10-2d # ConfigMap name matches
+              key: AZURE_SAS_TOKEN_EXPIRY_HOURS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service-task10-2d
+  labels:
+    app: product-service
+spec:
+  selector:
+    app: product-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: LoadBalancer
