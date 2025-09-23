@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: customer-db-deployment-task10-2d # Deployment name matches
+  name: customer-db-deployment-task10-3hd # Deployment name matches
   labels:
     app: customer-db
 spec:
@@ -25,23 +25,23 @@ spec:
         - name: POSTGRES_DB
           valueFrom:
             configMapKeyRef:
-              name: ecomm-config-task10-2d # ConfigMap name matches
+              name: ecomm-config-task10-3hd # ConfigMap name matches
               key: CUSTOMERS_DB_NAME # Point to the order database name
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: ecomm-secrets-task10-2d # Secret name matches
+              name: ecomm-secrets-task10-3hd # Secret name matches
               key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: ecomm-secrets-task10-2d # Secret name matches
+              name: ecomm-secrets-task10-3hd # Secret name matches
               key: POSTGRES_PASSWORD
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: customer-db-service-task10-2d # Internal DNS name for the Customer DB
+  name: customer-db-service-task10-3hd # Internal DNS name for the Customer DB
   labels:
     app: customer-db
 spec:

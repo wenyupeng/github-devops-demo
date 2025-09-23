@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: product-service-task10-2d
+  name: product-service-task10-3hd
   labels:
     app: product-service
 spec:
@@ -25,47 +25,47 @@ spec:
         env:
         # Database connection details
         - name: POSTGRES_HOST
-          value: product-db-service-task10-2d
+          value: product-db-service-task10-3hd
         - name: POSTGRES_DB
           valueFrom:
             configMapKeyRef:
-              name: ecomm-config-task10-2d
+              name: ecomm-config-task10-3hd
               key: PRODUCTS_DB_NAME
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: ecomm-secrets-task10-2d # Secret name matches
+              name: ecomm-secrets-task10-3hd # Secret name matches
               key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: ecomm-secrets-task10-2d # Secret name matches
+              name: ecomm-secrets-task10-3hd # Secret name matches
               key: POSTGRES_PASSWORD
         - name: AZURE_STORAGE_ACCOUNT_NAME
           valueFrom:
             secretKeyRef:
-              name: ecomm-secrets-task10-2d # Secret name matches
+              name: ecomm-secrets-task10-3hd # Secret name matches
               key: AZURE_STORAGE_ACCOUNT_NAME
         - name: AZURE_STORAGE_ACCOUNT_KEY
           valueFrom:
             secretKeyRef:
-              name: ecomm-secrets-task10-2d # Secret name matches
+              name: ecomm-secrets-task10-3hd # Secret name matches
               key: AZURE_STORAGE_ACCOUNT_KEY
         - name: AZURE_STORAGE_CONTAINER_NAME
           valueFrom:
             configMapKeyRef:
-              name: ecomm-config-task10-2d # ConfigMap name matches
+              name: ecomm-config-task10-3hd # ConfigMap name matches
               key: AZURE_STORAGE_CONTAINER_NAME
         - name: AZURE_SAS_TOKEN_EXPIRY_HOURS
           valueFrom:
             configMapKeyRef:
-              name: ecomm-config-task10-2d # ConfigMap name matches
+              name: ecomm-config-task10-3hd # ConfigMap name matches
               key: AZURE_SAS_TOKEN_EXPIRY_HOURS
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: product-service-task10-2d
+  name: product-service-task10-3hd
   labels:
     app: product-service
 spec:

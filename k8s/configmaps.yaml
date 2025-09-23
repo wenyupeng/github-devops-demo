@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ecomm-config-task10-2d
+  name: ecomm-config-task10-3hd
 data:
   # Database Names
   CUSTOMERS_DB_NAME: products
@@ -12,6 +12,6 @@ data:
   AZURE_STORAGE_CONTAINER_NAME: product-images
   AZURE_SAS_TOKEN_EXPIRY_HOURS: "24"
 
-  CUSTOMER_SERVICE_URL: http://customer-service-task10-2d:8002
-  PRODUCT_SERVICE_URL: http://product-service-task10-2d:8000
-  ORDER_SERVICE_URL: http://order-service-task10-2d:8001
+  CUSTOMER_SERVICE_URL: http://customer-service-task10-3hd:8002
+  PRODUCT_SERVICE_URL: http://product-service-task10-3hd:8000
+  ORDER_SERVICE_URL: http://order-service-task10-3hd:8001
