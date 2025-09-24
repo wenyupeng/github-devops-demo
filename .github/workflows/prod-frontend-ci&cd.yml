@@ -1,0 +1,139 @@
+# sit722-10-3hd/.github/workflows/prod-frontend-ci&cd.yml
+
+name: UAT Frontend CI & CD
+
+# This workflow can be called by other workflows and takes inputs.
+# Or it can be run manually if you provide the IPs.
+on:
+  workflow_dispatch:
+    inputs:
+      aks_cluster_name:
+        description: 'Name of the AKS Cluster to deploy to'
+        required: true
+        default: 'chriswen430-aks'
+      aks_resource_group:
+        description: 'Resource Group of the AKS Cluster'
+        required: true
+        default: 'chriswen430-rg'
+      fronted_image_version:
+        description: 'Frontend image version to deploy'
+        required: false
+        default: 'latest'
+
+  workflow_call:
+    inputs:
+      aks_cluster_name:
+        required: true
+        type: string
+        default: 'chriswen430-aks'
+      aks_resource_group:
+        required: true
+        type: string
+        default: 'chriswen430-rg'
+  push:
+    branches:
+      - main
+    paths:
+      - frontend/**
+      - .github/workflows/prod-frontend-ci&cd.yml
+
+jobs:
+  deploy_frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Azure login using a Service Principal secret
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Login to Azure Container Registry (ACR)
+      - name: Login to Azure Container Registry
+        run: az acr login --name ${{ secrets.ACR_LOGIN_SERVER }}
+
+      - name: Set Kubernetes context (get AKS credentials)
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ inputs.aks_resource_group }}
+          cluster-name: ${{ inputs.aks_cluster_name }}
+
+      # Auto-fetch Product and Order service IPs from Kubernetes
+      - name: Fetch Backend Service IPs from AKS
+        id: fetch_ips
+        run: |
+          echo "Fetching Product and Order Service IPs from AKS..."
+          CUSTOMER_IP=$(kubectl get svc customer-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          PRODUCT_IP=$(kubectl get svc product-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          ORDER_IP=$(kubectl get svc order-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+          if [[ -z "$CUSTOMER_IP" || -z "$PRODUCT_IP" || -z "$ORDER_IP" ]]; then
+            echo "Error: Could not fetch service IPs from Kubernetes."
+            exit 1
+          fi
+
+          echo "CUSTOMER_API_IP=http://$CUSTOMER_IP:8002" >> $GITHUB_ENV
+          echo "PRODUCT_API_IP=http://$PRODUCT_IP:8000" >> $GITHUB_ENV
+          echo "ORDER_API_IP=http://$ORDER_IP:8001" >> $GITHUB_ENV
+
+      - name: Inject Backend IPs into Frontend main.js
+        run: |
+          CUSTOMER_IP=$(kubectl get svc customer-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          PRODUCT_IP=$(kubectl get svc product-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          ORDER_IP=$(kubectl get svc order-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+          if [[ -z "$CUSTOMER_IP" || -z "$PRODUCT_IP" || -z "$ORDER_IP" ]]; then
+            echo "Error: Could not fetch service IPs from Kubernetes."
+            exit 1
+          fi
+
+          CUSTOMER_API_IP="http://$CUSTOMER_IP:8002"
+          PRODUCT_API_IP="http://$PRODUCT_IP:8000"
+          ORDER_API_IP="http://$ORDER_IP:8001"
+
+          echo "Injecting IPs into frontend/main.js"
+          sed -i "s|_CUSTOMER_API_URL_|$CUSTOMER_API_IP|g" frontend/main.js
+          sed -i "s|_PRODUCT_API_URL_|$PRODUCT_API_IP|g" frontend/main.js
+          sed -i "s|_ORDER_API_URL_|$ORDER_API_IP|g" frontend/main.js
+
+          # Debug
+          echo "--- Modified main.js content ---"
+          cat frontend/main.js
+          echo "---------------------------------"
+
+      - name: Determine next frontend image version
+        id: frontend_version
+        run: |
+          latest=$(az acr repository show-tags \
+            --name ${{ secrets.ACR_LOGIN_SERVER }} \
+            --repository frontend \
+            --query "sort(@)[-1]" -o tsv 2>/dev/null || echo "")
+          if [[ -z "$latest" ]]; then
+            next_version=v1
+          else
+            num=${latest#v}
+            next_version="v$((num+1))"
+          fi
+          echo "NEXT_FRONTEND_VERSION=$next_version" >> $GITHUB_ENV
+          echo "Next frontend version: $next_version"
+
+
+      # Build and Push Docker image for Frontend
+      - name: Build and Push Frontend Image
+        run: |
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ env.NEXT_FRONTEND_VERSION }} ./frontend/
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ env.NEXT_FRONTEND_VERSION }}
+
+      - name: Deploy Frontend to AKS
+        run: |
+          echo "Deploying frontend:${{ env.NEXT_FRONTEND_VERSION }} to AKS cluster: ${{ inputs.aks_cluster_name }}"
+          # Update the image tag in your Kubernetes manifest before applying
+          sed -i "s|frontend:.*|frontend:${{ env.NEXT_FRONTEND_VERSION }}|g" k8s/frontend.yaml
+          cd k8s/
+          kubectl apply -f frontend.yaml
+
+      - name: Logout from Azure (AKS deployment)
+        run: az logout

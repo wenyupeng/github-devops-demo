@@ -67,7 +67,7 @@ services:
       context: ./backend/customer_service
       dockerfile: Dockerfile
     container_name: customer_api_container
-    image: chrisyp/task10-2d_customer_service:latest
+    image: chrisyp/task10-3hd_customer_service:latest
     restart: always
     ports:
       - "8002:8000"
@@ -87,7 +87,7 @@ services:
       context: ./backend/product_service
       dockerfile: Dockerfile
     container_name: product_api_container
-    image: chrisyp/task10-2d_product_service:latest
+    image: chrisyp/task10-3hd_product_service:latest
     restart: always
     ports:
       - "8000:8000"
@@ -109,7 +109,7 @@ services:
     build:
       context: ./backend/order_service
       dockerfile: Dockerfile
-    image: chrisyp/task10-2d_order_service:latest
+    image: chrisyp/task10-3hd_order_service:latest
     container_name: order_api_container
     restart: always
     ports:
@@ -131,7 +131,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: chrisyp/task10-2d_frontend:latest
+    image: chrisyp/task10-3hd_frontend:latest
     container_name: product_order_frontend
     restart: always
     # Frontend connects to host ports, which are mapped to container ports

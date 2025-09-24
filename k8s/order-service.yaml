@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: order-service-task10-2d # Deployment name matches
+  name: order-service-task10-3hd # Deployment name matches
   labels:
     app: order-service
 spec:
@@ -24,37 +24,37 @@ spec:
         - containerPort: 8000
         env:
         - name: POSTGRES_HOST
-          value: order-db-service-task10-2d
+          value: order-db-service-task10-3hd
         - name: POSTGRES_DB
           valueFrom:
             configMapKeyRef:
-              name: ecomm-config-task10-2d
+              name: ecomm-config-task10-3hd
               key: ORDERS_DB_NAME
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: ecomm-secrets-task10-2d
+              name: ecomm-secrets-task10-3hd
               key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: ecomm-secrets-task10-2d
+              name: ecomm-secrets-task10-3hd
               key: POSTGRES_PASSWORD
         - name: PRODUCT_SERVICE_URL
           valueFrom:
             configMapKeyRef:
-              name: ecomm-config-task10-2d
+              name: ecomm-config-task10-3hd
               key: PRODUCT_SERVICE_URL
         - name: CUSTOMER_SERVICE_URL
           valueFrom:
             configMapKeyRef:
-              name: ecomm-config-task10-2d
+              name: ecomm-config-task10-3hd
               key: CUSTOMER_SERVICE_URL              
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: order-service-task10-2d
+  name: order-service-task10-3hd
   labels:
     app: order-service
 spec:

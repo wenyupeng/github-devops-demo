@@ -1,0 +1,194 @@
+# sit722-10-3hd/.github/workflows/prod-backend-cd.yml
+
+name: PROD Backend CD - Deploy Backend Services to AKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      aks_cluster_name:
+        description: 'Name of the AKS Cluster to deploy to'
+        required: false
+        default: 'chriswen430-aks'
+      aks_resource_group:
+        description: 'Resource Group of the AKS Cluster'
+        required: false
+        default: 'chriswen430-rg'
+      aks_acr_name:
+        description: 'Name of ACR'
+        required: false
+        default: 'chriswen430acr'
+      customer_service_tag:
+        description: 'Tag of Customer Service image to deploy'
+        required: false
+        default: 'latest'
+      product_service_tag:
+        description: 'Tag of Product Service image to deploy'
+        required: false
+        default: 'latest'
+      order_service_tag:
+        description: 'Tag of Order Service image to deploy'
+        required: false
+        default: 'latest'
+  workflow_call:
+    inputs:
+      aks_cluster_name:
+        required: false
+        type: string
+        default: 'chriswen430-aks'
+      aks_resource_group:
+        required: false
+        type: string
+        default: 'chriswen430-rg'
+      aks_acr_name:
+        required: false
+        type: string
+        default: 'chriswen430acr'
+
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/prod-backend-cd.yml'
+
+
+jobs:
+  deploy_backend:
+    runs-on: ubuntu-latest
+    outputs:
+      CUSTOMER_API_IP: ${{ steps.get_customer_ip.outputs.external_ip }}
+      PRODUCT_API_IP: ${{ steps.get_product_ip.outputs.external_ip }}
+      ORDER_API_IP: ${{ steps.get_order_ip.outputs.external_ip }}
+
+    steps:
+      # 1. Checkout the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      # 2. Azure Login using Service Principal
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
+
+      # 3. Set Kubernetes context (get AKS credentials)
+      - name: Set Kubernetes context (get AKS credentials)
+        run: |
+          AKS_CLUSTER_NAME=${{ github.event.inputs.aks_cluster_name }}
+          AKS_RESOURCE_GROUP=${{ github.event.inputs.aks_resource_group }}
+          az aks get-credentials --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER_NAME --overwrite-existing
+
+      # 4. Get latest Docker image versions from ACR
+      - name: Get latest Docker image versions from ACR
+        id: get_latest_versions
+        run: |
+          AKS_ACR_NAME="${{ github.event.inputs.aks_acr_name }}"
+
+          if [[ -z "${{ github.event.inputs.customer_service_tag }}" ]]; then
+            CUSTOMER_TAG=$(az acr repository show-tags --name "$AKS_ACR_NAME" --repository customer_service --query "sort(@)[-1]" -o tsv)
+          else
+            CUSTOMER_TAG="${{ github.event.inputs.customer_service_tag }}"
+          fi
+
+          if [[ -z "${{ github.event.inputs.product_service_tag }}" ]]; then
+            PRODUCT_TAG=$(az acr repository show-tags --name "$AKS_ACR_NAME" --repository product_service --query "sort(@)[-1]" -o tsv)
+          else
+            PRODUCT_TAG="${{ github.event.inputs.product_service_tag }}"
+          fi
+
+          if [[ -z "${{ github.event.inputs.order_service_tag }}" ]]; then
+            ORDER_TAG=$(az acr repository show-tags --name "$AKS_ACR_NAME" --repository order_service --query "sort(@)[-1]" -o tsv)
+          else
+            ORDER_TAG="${{ github.event.inputs.order_service_tag }}"
+          fi
+
+          if [[ -z "$CUSTOMER_TAG" ]]; then CUSTOMER_TAG=latest; fi
+          if [[ -z "$PRODUCT_TAG" ]]; then PRODUCT_TAG=latest; fi
+          if [[ -z "$ORDER_TAG" ]]; then ORDER_TAG=latest; fi
+
+          echo "CUSTOMER_TAG=$CUSTOMER_TAG" >> "$GITHUB_ENV"
+          echo "PRODUCT_TAG=$PRODUCT_TAG" >> "$GITHUB_ENV"
+          echo "ORDER_TAG=$ORDER_TAG" >> "$GITHUB_ENV"
+
+          echo "Latest Customer Service image: $CUSTOMER_TAG"
+          echo "Latest Product Service image: $PRODUCT_TAG"
+          echo "Latest Order Service image: $ORDER_TAG"
+
+  
+      # 6. Modify k8s yaml files to use the latest image versions
+      - name: Update Kubernetes YAML with latest image versions
+        run: |
+          AKS_ACR_NAME=${{ github.event.inputs.aks_acr_name }}
+          sed -i "s|image: .*customer_service:.*|image: $AKS_ACR_NAME.azurecr.io/customer_service:${CUSTOMER_TAG}|g" k8s/customer-service.yaml
+          sed -i "s|image: .*product_service:.*|image: $AKS_ACR_NAME.azurecr.io/product_service:${PRODUCT_TAG}|g" k8s/product-service.yaml
+          sed -i "s|image: .*order_service:.*|image: $AKS_ACR_NAME.azurecr.io/order_service:${ORDER_TAG}|g" k8s/order-service.yaml
+
+      # 7. Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases)
+      - name: Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases)
+        run: |
+          echo "Deploying backend infrastructure..."
+          cd k8s/
+          kubectl apply -f configmaps.yaml
+          kubectl apply -f secrets.yaml
+          kubectl apply -f customer-db.yaml
+          kubectl apply -f product-db.yaml
+          kubectl apply -f order-db.yaml
+      
+      # 8. Deploy Backend Microservices (Customer, Product, Order)
+      - name: Deploy Backend Microservices (Customer, Product, Order)
+        run: |
+          echo "Deploying backend microservices..."
+          cd k8s/
+          kubectl apply -f customer-service.yaml
+          kubectl apply -f product-service.yaml
+          kubectl apply -f order-service.yaml
+      
+      # 10. Wait for Backend LoadBalancer IPs to be assigned
+      - name: Wait for Backend LoadBalancer IPs
+        run: |
+          echo "Waiting for Product, Order LoadBalancer IPs to be assigned (up to 5 minutes)..."
+          CUSTOMER_IP=""
+          PRODUCT_IP=""
+          ORDER_IP=""
+          
+          for i in $(seq 1 60); do
+            echo "Attempt $i/60 to get IPs..."
+            CUSTOMER_IP=$(kubectl get service customer-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            PRODUCT_IP=$(kubectl get service product-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            ORDER_IP=$(kubectl get service order-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+            if [[ -n "$CUSTOMER_IP" && -n "$PRODUCT_IP" && -n "$ORDER_IP" ]]; then
+              echo "All backend LoadBalancer IPs assigned!"
+              echo "Customer Service IP: $CUSTOMER_IP"
+              echo "Product Service IP: $PRODUCT_IP"
+              echo "Order Service IP: $ORDER_IP"
+              break
+            fi
+            sleep 5 # Wait 5 seconds before next attempt
+          done
+          
+          if [[ -z "$CUSTOMER_IP" || -z "$PRODUCT_IP" || -z "$ORDER_IP" ]]; then
+            echo "Error: One or more LoadBalancer IPs not assigned after timeout."
+            exit 1 # Fail the job if IPs are not obtained
+          fi
+          
+          # These are environment variables for subsequent steps in the *same job*
+          # And used to set the job outputs
+          echo "CUSTOMER_IP=$CUSTOMER_IP" >> $GITHUB_ENV
+          echo "PRODUCT_IP=$PRODUCT_IP" >> $GITHUB_ENV
+          echo "ORDER_IP=$ORDER_IP" >> $GITHUB_ENV
+      
+      - name: Capture Customer Service IP for Workflow Output
+        id: get_customer_ip
+        run: echo "external_ip=${{ env.CUSTOMER_IP }}" >> $GITHUB_OUTPUT
+
+      - name: Capture Product Service IP for Workflow Output
+        id: get_product_ip
+        run: echo "external_ip=${{ env.PRODUCT_IP }}" >> $GITHUB_OUTPUT
+      
+      - name: Capture Order Service IP for Workflow Output
+        id: get_order_ip
+        run: echo "external_ip=${{ env.ORDER_IP }}" >> $GITHUB_OUTPUT
+
+      - name: Logout from Azure
+        run: az logout

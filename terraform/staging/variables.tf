@@ -3,7 +3,7 @@
 variable "prefix" {
   description = "Prefix for all resource names"
   type        = string
-  default     = "sit722devops102d"
+  default     = "sit722devops103hd"
 }
 
 variable "location" {
