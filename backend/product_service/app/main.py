@@ -32,6 +32,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError, IntegrityError
 from sqlalchemy.orm import Session
 
+# --- Prometheus client imports ---
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
+from prometheus_client.core import CollectorRegistry
+from starlette.responses import PlainTextResponse # Required for /metrics endpoint
+
+
 from .db import Base, engine, get_db
 from .models import Product
 from .schemas import ProductCreate, ProductResponse, ProductUpdate, StockDeductRequest
@@ -103,6 +109,54 @@ RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
 rabbitmq_connection: Optional[aio_pika.Connection] = None
 rabbitmq_channel: Optional[aio_pika.Channel] = None
 rabbitmq_exchange: Optional[aio_pika.Exchange] = None
+
+
+# --- Prometheus Metrics Initialization ---
+# Create a custom registry specific to this application instance
+registry = CollectorRegistry()
+APP_NAME = "product_service" # Unique identifier for this service in metrics
+
+# Define Prometheus metrics (Basic HTTP Metrics)
+REQUEST_COUNT = Counter(
+    'http_requests_total', 'Total HTTP requests processed by the application',
+    ['app_name', 'method', 'endpoint', 'status_code'], registry=registry
+)
+REQUEST_DURATION = Histogram(
+    'http_request_duration_seconds', 'HTTP request duration in seconds',
+    ['app_name', 'method', 'endpoint', 'status_code'], registry=registry
+)
+REQUESTS_IN_PROGRESS = Gauge(
+    'http_requests_in_progress', 'Number of HTTP requests in progress',
+    ['app_name', 'method', 'endpoint'], registry=registry
+)
+
+# Custom Metrics specific to Order Service business logic
+ORDER_CREATION_TOTAL = Counter(
+    'order_creation_total', 'Total number of orders created',
+    ['app_name', 'status'], registry=registry # status: success, failed_items, db_error
+)
+ORDER_ITEM_COUNT = Counter(
+    'order_item_count', 'Total number of individual items processed in orders',
+    ['app_name', 'product_id'], registry=registry
+)
+ORDER_TOTAL_AMOUNT = Histogram(
+    'order_total_amount_dollars', 'Total amount of orders in dollars',
+    ['app_name'], registry=registry # This will provide buckets for order value distribution
+)
+ORDER_STATUS_UPDATE_TOTAL = Counter(
+    'order_status_update_total', 'Total order status updates',
+    ['app_name', 'status'], registry=registry # status: success, not_found, db_error
+)
+# Metrics for inter-service communication (calls from Order Service to Product Service)
+PRODUCT_SERVICE_CALL_TOTAL = Counter(
+    'product_service_call_total', 'Total calls made from Order Service to Product Service',
+    ['app_name', 'target_endpoint', 'method', 'status_code'], registry=registry
+)
+PRODUCT_SERVICE_CALL_DURATION = Histogram(
+    'product_service_call_duration_seconds', 'Duration of calls from Order Service to Product Service',
+    ['app_name', 'target_endpoint', 'method', 'status_code'], registry=registry
+)
+
 
 # --- FastAPI Application Setup ---
 app = FastAPI(
