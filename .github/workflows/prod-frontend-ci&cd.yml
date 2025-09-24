@@ -40,28 +40,32 @@ on:
 jobs:
   deploy_frontend:
     runs-on: ubuntu-latest
+    env: 
+      ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
 
     steps:
+      # 1. Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Azure login using a Service Principal secret
+      # 2. Azure login using a Service Principal secret
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Login to Azure Container Registry (ACR)
+      # 3. Login to Azure Container Registry (ACR)
       - name: Login to Azure Container Registry
-        run: az acr login --name ${{ secrets.ACR_LOGIN_SERVER }}
-
+        run: az acr login --name $ACR_LOGIN_SERVER
+      
+      # 4. Set AKS context to interact with the cluster
       - name: Set Kubernetes context (get AKS credentials)
         uses: azure/aks-set-context@v3
         with:
           resource-group: ${{ inputs.aks_resource_group }}
           cluster-name: ${{ inputs.aks_cluster_name }}
 
-      # Auto-fetch Product and Order service IPs from Kubernetes
+      # 5. Auto-fetch Product and Order service IPs from Kubernetes
       - name: Fetch Backend Service IPs from AKS
         id: fetch_ips
         run: |
@@ -78,7 +82,8 @@ jobs:
           echo "CUSTOMER_API_IP=http://$CUSTOMER_IP:8002" >> $GITHUB_ENV
           echo "PRODUCT_API_IP=http://$PRODUCT_IP:8000" >> $GITHUB_ENV
           echo "ORDER_API_IP=http://$ORDER_IP:8001" >> $GITHUB_ENV
-
+      
+      # 6. Inject the fetched IPs into the frontend code
       - name: Inject Backend IPs into Frontend main.js
         run: |
           CUSTOMER_IP=$(kubectl get svc customer-service-task10-3hd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -104,11 +109,12 @@ jobs:
           cat frontend/main.js
           echo "---------------------------------"
 
+      # 7. Determine the next frontend image version
       - name: Determine next frontend image version
         id: frontend_version
         run: |
           latest=$(az acr repository show-tags \
-            --name ${{ secrets.ACR_LOGIN_SERVER }} \
+            --name $ACR_LOGIN_SERVER \
             --repository frontend \
             --query "sort(@)[-1]" -o tsv 2>/dev/null || echo "")
           if [[ -z "$latest" ]]; then
@@ -121,12 +127,13 @@ jobs:
           echo "Next frontend version: $next_version"
 
 
-      # Build and Push Docker image for Frontend
+      # 8. Build and Push Docker image for Frontend
       - name: Build and Push Frontend Image
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ env.NEXT_FRONTEND_VERSION }} ./frontend/
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/frontend:${{ env.NEXT_FRONTEND_VERSION }}
+          docker build -t $ACR_LOGIN_SERVER/frontend:${{ env.NEXT_FRONTEND_VERSION }} ./frontend/
+          docker push $secrets.ACR_LOGIN_SERVER/frontend:${{ env.NEXT_FRONTEND_VERSION }}
 
+      # 9. Deploy the new frontend image to AKS
       - name: Deploy Frontend to AKS
         run: |
           echo "Deploying frontend:${{ env.NEXT_FRONTEND_VERSION }} to AKS cluster: ${{ inputs.aks_cluster_name }}"

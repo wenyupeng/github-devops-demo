@@ -50,14 +50,9 @@ on:
     paths:
       - '.github/workflows/prod-backend-cd.yml'
 
-
 jobs:
   deploy_backend:
     runs-on: ubuntu-latest
-    outputs:
-      CUSTOMER_API_IP: ${{ steps.get_customer_ip.outputs.external_ip }}
-      PRODUCT_API_IP: ${{ steps.get_product_ip.outputs.external_ip }}
-      ORDER_API_IP: ${{ steps.get_order_ip.outputs.external_ip }}
 
     steps:
       # 1. Checkout the repository code
@@ -114,8 +109,7 @@ jobs:
           echo "Latest Product Service image: $PRODUCT_TAG"
           echo "Latest Order Service image: $ORDER_TAG"
 
-  
-      # 6. Modify k8s yaml files to use the latest image versions
+      # 5. Modify k8s yaml files to use the latest image versions
       - name: Update Kubernetes YAML with latest image versions
         run: |
           AKS_ACR_NAME=${{ github.event.inputs.aks_acr_name }}
@@ -123,7 +117,7 @@ jobs:
           sed -i "s|image: .*product_service:.*|image: $AKS_ACR_NAME.azurecr.io/product_service:${PRODUCT_TAG}|g" k8s/product-service.yaml
           sed -i "s|image: .*order_service:.*|image: $AKS_ACR_NAME.azurecr.io/order_service:${ORDER_TAG}|g" k8s/order-service.yaml
 
-      # 7. Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases)
+      # 6. Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases)
       - name: Deploy Backend Infrastructure (Namespace, ConfigMaps, Secrets, Databases)
         run: |
           echo "Deploying backend infrastructure..."
@@ -134,7 +128,7 @@ jobs:
           kubectl apply -f product-db.yaml
           kubectl apply -f order-db.yaml
       
-      # 8. Deploy Backend Microservices (Customer, Product, Order)
+      # 7. Deploy Backend Microservices (Customer, Product, Order)
       - name: Deploy Backend Microservices (Customer, Product, Order)
         run: |
           echo "Deploying backend microservices..."
@@ -143,7 +137,7 @@ jobs:
           kubectl apply -f product-service.yaml
           kubectl apply -f order-service.yaml
       
-      # 10. Wait for Backend LoadBalancer IPs to be assigned
+      # 8. Wait for Backend LoadBalancer IPs to be assigned
       - name: Wait for Backend LoadBalancer IPs
         run: |
           echo "Waiting for Product, Order LoadBalancer IPs to be assigned (up to 5 minutes)..."
@@ -178,17 +172,6 @@ jobs:
           echo "PRODUCT_IP=$PRODUCT_IP" >> $GITHUB_ENV
           echo "ORDER_IP=$ORDER_IP" >> $GITHUB_ENV
       
-      - name: Capture Customer Service IP for Workflow Output
-        id: get_customer_ip
-        run: echo "external_ip=${{ env.CUSTOMER_IP }}" >> $GITHUB_OUTPUT
-
-      - name: Capture Product Service IP for Workflow Output
-        id: get_product_ip
-        run: echo "external_ip=${{ env.PRODUCT_IP }}" >> $GITHUB_OUTPUT
-      
-      - name: Capture Order Service IP for Workflow Output
-        id: get_order_ip
-        run: echo "external_ip=${{ env.ORDER_IP }}" >> $GITHUB_OUTPUT
-
+      # 9. Logout from Azure
       - name: Logout from Azure
         run: az logout
