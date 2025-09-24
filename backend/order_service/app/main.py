@@ -309,7 +309,6 @@ async def consume_stock_events(db_session_factory: Session):
             exc_info=True,
         )
 
-
 # --- Middleware for Prometheus Metrics ---
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):

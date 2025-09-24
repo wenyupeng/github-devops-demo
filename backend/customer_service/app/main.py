@@ -83,6 +83,21 @@ PRODUCT_SERVICE_CALL_DURATION = Histogram(
     ['app_name', 'target_endpoint', 'method', 'status_code'], registry=registry
 )
 
+# --- FastAPI Application Setup ---
+app = FastAPI(
+    title="Customer Service API",
+    description="Manages orders for mini-ecommerce app, with synchronous stock deduction.",
+    version="1.0.0",
+)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Restrict for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Middleware for Prometheus Metrics ---
 @app.middleware("http")
@@ -119,23 +134,6 @@ async def add_process_time_header(request: Request, call_next):
 async def metrics():
     # generate_latest collects all metrics from the registry and formats them for Prometheus
     return PlainTextResponse(generate_latest(registry))
-
-# --- FastAPI Application Setup ---
-app = FastAPI(
-    title="Customer Service API",
-    description="Manages orders for mini-ecommerce app, with synchronous stock deduction.",
-    version="1.0.0",
-)
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Restrict for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 
 # --- FastAPI Event Handlers ---
 @app.on_event("startup")

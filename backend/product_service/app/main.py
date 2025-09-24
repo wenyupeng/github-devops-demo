@@ -157,6 +157,13 @@ PRODUCT_SERVICE_CALL_DURATION = Histogram(
     ['app_name', 'target_endpoint', 'method', 'status_code'], registry=registry
 )
 
+# --- FastAPI Application Setup ---
+app = FastAPI(
+    title="Product Service API",
+    description="Manages products and stock for mini-ecommerce app, with Azure Storage integration.",
+    version="1.0.0",
+)
+
 
 # --- Middleware for Prometheus Metrics ---
 @app.middleware("http")
@@ -194,12 +201,6 @@ async def metrics():
     # generate_latest collects all metrics from the registry and formats them for Prometheus
     return PlainTextResponse(generate_latest(registry))
 
-# --- FastAPI Application Setup ---
-app = FastAPI(
-    title="Product Service API",
-    description="Manages products and stock for mini-ecommerce app, with Azure Storage integration.",
-    version="1.0.0",
-)
 
 # Enable CORS (for frontend dev/testing)
 app.add_middleware(
