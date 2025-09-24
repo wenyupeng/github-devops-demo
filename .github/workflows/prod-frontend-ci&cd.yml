@@ -37,6 +37,11 @@ on:
       - frontend/**
       - .github/workflows/prod-frontend-ci&cd.yml
 
+env:
+  AKS_CLUSTER_NAME: ${{ github.event.inputs.aks_cluster_name || 'chriswen430-aks' }}
+  AKS_RESOURCE_GROUP: ${{ github.event.inputs.aks_resource_group || 'chriswen430-rg' }}
+  FRONTEND_IMAGE_VERSION: ${{ github.event.inputs.fronted_image_version || 'latest' }}
+
 jobs:
   deploy_frontend:
     runs-on: ubuntu-latest
@@ -62,9 +67,9 @@ jobs:
       - name: Set Kubernetes context (get AKS credentials)
         uses: azure/aks-set-context@v3
         with:
-          resource-group: ${{ inputs.aks_resource_group }}
-          cluster-name: ${{ inputs.aks_cluster_name }}
-
+          resource-group: ${{ github.event.inputs.aks_resource_group || 'chriswen430-rg' }}
+          cluster-name:  ${{ github.event.inputs.aks_cluster_name || 'chriswen430-aks' }}
+          
       # 5. Auto-fetch Product and Order service IPs from Kubernetes
       - name: Fetch Backend Service IPs from AKS
         id: fetch_ips
@@ -126,7 +131,6 @@ jobs:
           echo "NEXT_FRONTEND_VERSION=$next_version" >> $GITHUB_ENV
           echo "Next frontend version: $next_version"
 
-
       # 8. Build and Push Docker image for Frontend
       - name: Build and Push Frontend Image
         run: |
@@ -136,11 +140,12 @@ jobs:
       # 9. Deploy the new frontend image to AKS
       - name: Deploy Frontend to AKS
         run: |
-          echo "Deploying frontend:${{ env.NEXT_FRONTEND_VERSION }} to AKS cluster: ${{ inputs.aks_cluster_name }}"
+          echo "Deploying frontend:${{ env.NEXT_FRONTEND_VERSION }} to AKS cluster: $AKS_CLUSTER_NAME"
           # Update the image tag in your Kubernetes manifest before applying
           sed -i "s|frontend:.*|frontend:${{ env.NEXT_FRONTEND_VERSION }}|g" k8s/frontend.yaml
           cd k8s/
           kubectl apply -f frontend.yaml
 
+      # 10. Logout from Azure
       - name: Logout from Azure (AKS deployment)
         run: az logout

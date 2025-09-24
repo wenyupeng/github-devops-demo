@@ -49,6 +49,10 @@ on:
       - main
     paths:
       - '.github/workflows/prod-backend-cd.yml'
+env:
+  AKS_CLUSTER_NAME: ${{ github.event.inputs.aks_cluster_name || 'chriswen430-aks' }}
+  AKS_RESOURCE_GROUP: ${{ github.event.inputs.aks_resource_group || 'chriswen430-rg' }}
+  AKS_ACR_NAME: ${{ github.event.inputs.aks_acr_name || 'chriswen430acr' }}
 
 jobs:
   deploy_backend:
@@ -69,16 +73,12 @@ jobs:
       # 3. Set Kubernetes context (get AKS credentials)
       - name: Set Kubernetes context (get AKS credentials)
         run: |
-          AKS_CLUSTER_NAME=${{ github.event.inputs.aks_cluster_name }}
-          AKS_RESOURCE_GROUP=${{ github.event.inputs.aks_resource_group }}
           az aks get-credentials --resource-group $AKS_RESOURCE_GROUP --name $AKS_CLUSTER_NAME --overwrite-existing
 
       # 4. Get latest Docker image versions from ACR
       - name: Get latest Docker image versions from ACR
         id: get_latest_versions
         run: |
-          AKS_ACR_NAME="${{ github.event.inputs.aks_acr_name }}"
-
           if [[ -z "${{ github.event.inputs.customer_service_tag }}" ]]; then
             CUSTOMER_TAG=$(az acr repository show-tags --name "$AKS_ACR_NAME" --repository customer_service --query "sort(@)[-1]" -o tsv)
           else
@@ -112,7 +112,6 @@ jobs:
       # 5. Modify k8s yaml files to use the latest image versions
       - name: Update Kubernetes YAML with latest image versions
         run: |
-          AKS_ACR_NAME=${{ github.event.inputs.aks_acr_name }}
           sed -i "s|image: .*customer_service:.*|image: $AKS_ACR_NAME.azurecr.io/customer_service:${CUSTOMER_TAG}|g" k8s/customer-service.yaml
           sed -i "s|image: .*product_service:.*|image: $AKS_ACR_NAME.azurecr.io/product_service:${PRODUCT_TAG}|g" k8s/product-service.yaml
           sed -i "s|image: .*order_service:.*|image: $AKS_ACR_NAME.azurecr.io/order_service:${ORDER_TAG}|g" k8s/order-service.yaml
