@@ -5,6 +5,11 @@ name: UAT Frontend CI & CD
 # This workflow can be called by other workflows and takes inputs.
 # Or it can be run manually if you provide the IPs.
 on:
+  workflow_run:
+    workflows: ["PROD Backend CD - Deploy Backend Services to AKS"]
+    types:
+      - completed
+
   workflow_dispatch:
     inputs:
       aks_cluster_name:
@@ -69,7 +74,7 @@ jobs:
         with:
           resource-group: ${{ github.event.inputs.aks_resource_group || 'chriswen430-rg' }}
           cluster-name:  ${{ github.event.inputs.aks_cluster_name || 'chriswen430-aks' }}
-          
+
       # 5. Auto-fetch Product and Order service IPs from Kubernetes
       - name: Fetch Backend Service IPs from AKS
         id: fetch_ips
@@ -135,7 +140,7 @@ jobs:
       - name: Build and Push Frontend Image
         run: |
           docker build -t $ACR_LOGIN_SERVER/frontend:${{ env.NEXT_FRONTEND_VERSION }} ./frontend/
-          docker push $secrets.ACR_LOGIN_SERVER/frontend:${{ env.NEXT_FRONTEND_VERSION }}
+          docker push $ACR_LOGIN_SERVER/frontend:${{ env.NEXT_FRONTEND_VERSION }}
 
       # 9. Deploy the new frontend image to AKS
       - name: Deploy Frontend to AKS
