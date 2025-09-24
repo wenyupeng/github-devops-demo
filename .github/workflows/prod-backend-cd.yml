@@ -20,15 +20,15 @@ on:
       customer_service_tag:
         description: 'Tag of Customer Service image to deploy'
         required: false
-        default: 'latest'
+        default: 'v1'
       product_service_tag:
         description: 'Tag of Product Service image to deploy'
         required: false
-        default: 'latest'
+        default: 'v1'
       order_service_tag:
         description: 'Tag of Order Service image to deploy'
         required: false
-        default: 'latest'
+        default: 'v1'
   workflow_call:
     inputs:
       aks_cluster_name:

@@ -53,3 +53,15 @@ data:
             regex: (.+)
             target_label: __metrics_path__
             replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+
+      - job_name: 'product-service'
+        static_configs:
+          - targets: ['product-service-task10-3hd:8000']
+      
+      - job_name: 'order-service'
+        static_configs:
+          - targets: ['order-service-task10-3hd:8001']
+
+      - job_name: 'customer-service'
+        static_configs:
+          - targets: ['customer-service-task10-3hd:8002']
