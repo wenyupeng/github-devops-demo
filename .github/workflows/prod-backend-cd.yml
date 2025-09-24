@@ -48,6 +48,7 @@ on:
     branches:
       - main
     paths:
+      - '/backend/**'
       - '.github/workflows/prod-backend-cd.yml'
 env:
   AKS_CLUSTER_NAME: ${{ github.event.inputs.aks_cluster_name || 'chriswen430-aks' }}
