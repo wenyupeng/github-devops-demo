@@ -6,3 +6,5 @@ python-multipart
 pydantic
 azure-storage-blob
 aio-pika
+httpx
+prometheus_client
