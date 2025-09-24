@@ -1,6 +1,6 @@
 # sit722-10-3hd/.github/workflows/prod-frontend-ci&cd.yml
 
-name: UAT Frontend CI & CD
+name: PROD Frontend CI & CD
 
 # This workflow can be called by other workflows and takes inputs.
 # Or it can be run manually if you provide the IPs.
