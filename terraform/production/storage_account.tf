@@ -1,8 +1,8 @@
-# sit722-10-2d/terraform/storage_account.tf
+# terraform/production/storage_account.tf
 
 
 resource "azurerm_storage_account" "my_storage_account" {
-  name                     = "${var.prefix}stg"
+  name                     = "${var.prefix}stg2025"
   resource_group_name      = azurerm_resource_group.my_resource_group.name
   location                 = azurerm_resource_group.my_resource_group.location
   account_tier             = "Standard"

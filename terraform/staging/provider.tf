@@ -1,4 +1,4 @@
-# sit722-10-2d/terraform/provider.tf
+# terraform/staging/provider.tf
 
 terraform {
   required_providers {

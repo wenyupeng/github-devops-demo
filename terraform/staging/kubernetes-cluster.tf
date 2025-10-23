@@ -1,4 +1,4 @@
-# sit722-10-2d/terraform/kubernetes-cluster.tf
+# terraform/staging/kubernetes-cluster.tf
 
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = "${var.prefix}-aks"

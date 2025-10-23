@@ -1,4 +1,4 @@
-# sit722-10-2d/terraform/variables.tf
+# terraform/production/variables.tf
 
 variable "prefix" {
   description = "Prefix for all resource names"

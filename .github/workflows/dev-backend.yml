@@ -1,4 +1,4 @@
-# sit7222-10-3hd/.github/workflows/dev-backend.yml
+# github-devops-demo/.github/workflows/dev-backend.yml
 
 name: Dev Backend Code checks - Code Analysis, Test
 
