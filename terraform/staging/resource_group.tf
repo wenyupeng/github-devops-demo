@@ -1,7 +1,7 @@
 # terraform/staging/resource_group.tf
 
 
-resource "azurerm_resource_group" "my_resource_group" {
+resource "azurerm_resource_group" "existing" {
   name     = "${var.prefix}-rg"
   location = var.location
 }
