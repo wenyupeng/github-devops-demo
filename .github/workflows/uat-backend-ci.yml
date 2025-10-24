@@ -299,7 +299,7 @@ jobs:
       # 6. Deploy backend Infrastructure to the staging AKS cluster
       - name: Deploy Backend Infrastructure to Staging AKS
         run: |
-          az aks get-credentials --resource-group sit722devops103hd-rg --name sit722devops103hd-aks
+          az aks get-credentials --resource-group chriswen430-rg --name chriswen430-aks
           kubectl apply -f k8s/configmaps.yaml
           kubectl apply -f k8s/secrets.yaml
           kubectl apply -f k8s/customer-db.yaml
