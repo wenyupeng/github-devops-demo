@@ -1,4 +1,4 @@
-# sit722-10-3hd/.github/workflows/prod-backend-cd.yml
+# github-devops-demo/.github/workflows/prod-backend-cd.yml
 
 name: PROD Backend CD - Deploy Backend Services to AKS
 

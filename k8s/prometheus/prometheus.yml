@@ -1,4 +1,4 @@
-# sit722-10-3hd/k8s/prometheus/prometheus.yml
+# github-devops-demo/k8s/prometheus/prometheus.yml
 
 global:
   scrape_interval: 15s
