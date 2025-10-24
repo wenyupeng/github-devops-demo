@@ -20,7 +20,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 }
 
 data "azurerm_container_registry" "existing_acr" {
-  name                = "chriswen430acr2025"
+  name                = "chriswen430acr202507"
   resource_group_name = "chriswen430-rg"
 }
 
