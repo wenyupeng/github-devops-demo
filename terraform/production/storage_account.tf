@@ -2,7 +2,7 @@
 
 
 resource "azurerm_storage_account" "my_storage_account" {
-  name                     = "${var.prefix}stg2025"
+  name                     = "${var.prefix}stg202507"
   resource_group_name      = azurerm_resource_group.my_resource_group.name
   location                 = azurerm_resource_group.my_resource_group.location
   account_tier             = "Standard"

@@ -9,7 +9,7 @@ variable "prefix" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "eastus"
+  default     = "australiaeast"
 }
 
 variable "kubernetes_version" {
