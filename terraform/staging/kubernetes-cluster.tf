@@ -1,7 +1,7 @@
 # terraform/staging/kubernetes-cluster.tf
 
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                = "${var.prefix}-aks"
+  name                = "${var.prefix}-aks-staging"
   location            = var.location
   resource_group_name = data.azurerm_resource_group.existing.name
   dns_prefix          = var.prefix
