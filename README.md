@@ -10,7 +10,7 @@ The goal of this repository is to showcase how to:
 - Build and deploy applications to Azure  
 - Implement a modern DevOps workflow with minimal setup  
 
-GitHub Actions enables developers to automate software workflows such as build, test, and deployment directly from a GitHub repository :contentReference[oaicite:0]{index=0}.
+GitHub Actions enables developers to automate software workflows such as build, test, and deployment directly from a GitHub repository.
 
 ---
 
@@ -50,7 +50,7 @@ This project uses GitHub Actions to implement Continuous Integration and Continu
 4. Run tests (optional)
 5. Deploy to Azure
 
-GitHub Actions workflows are defined in YAML files and can be triggered by events such as commits or pull requests :contentReference[oaicite:1]{index=1}.
+GitHub Actions workflows are defined in YAML files and can be triggered by events such as commits or pull requests.
 
 ---
 
